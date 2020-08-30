@@ -1,0 +1,74 @@
+*Time Series homework 2;
+libname homework "/opt/sas/home/jegines/sasuser.viya/Time Series";
+/*Separate data into 
+training, validation, and test datasets 
+Validation witholds 12 months, test the last 5 months*/
+data homework.ozonetrain;
+	set homework.ozone;
+	where date between '01JAN2014'd and '31DEC2018'd;
+run;
+data homework.ozonevalid;
+	set homework.ozone;
+	where date between '01JAN2019'd and '31DEC2019'd;
+run;
+data homework.ozonetest;
+	set homework.ozone;
+	where date between '01JAN2020'd and '31MAY2020'd;
+run;
+
+proc means data=homework.ozonetrain; 
+	var daily_max_8_hour_ozone_concentra;
+	class newdate;
+	output out=homework.monthlyavgtrain;
+run;
+data homework.monthlyavgtrain;
+	set homework.monthlyavgtrain;
+	where _stat_="MEAN";
+	if newdate=. then delete;
+run;
+*SINGLE ESM;
+proc esm data=homework.monthlyavgtrain print=all plot=all lead=17;
+	id newdate interval=month;
+	forecast Daily_Max_8_hour_ozone_concentra / model=simple;
+run;
+
+* linear exponential smoothing; 
+proc esm data=homework.monthlyavgtrain print=all plot=all lead=17;
+	id newdate interval=month;
+	forecast Daily_Max_8_hour_ozone_concentra  / model=linear;
+run;
+
+*additive winters;
+proc esm data=homework.monthlyavgtrain print=all plot=all 
+		 seasonality=12 lead=17;
+	forecast Daily_Max_8_hour_ozone_concentra / model=addwinters;
+run;
+* damped trend exponential smoothing; 
+proc esm data=homework.monthlyavgtrain print=all plot=all lead=24;
+	forecast Daily_Max_8_hour_ozone_concentra / model=damptrend;
+run;
+
+* Winters multiplicative exponential smoothing model (includes trend)* Lead = 24; 
+proc esm data=homework.monthlyavgtrain print=all plot=all 
+		 seasonality=12 lead=24;
+	forecast Daily_Max_8_hour_ozone_concentra / model=multwinters;
+run;
+* Additive seasonal exponential smoothing model; 
+proc esm data=homework.monthlyavgtrain print=all plot=all 
+		 seasonality=12 lead=24 outfor=test1;
+	forecast Daily_Max_8_hour_ozone_concentra / model=addseasonal;
+run;
+proc print data=test1;
+run;
+* mulitplicative seasonal exponential smoothing model; 
+proc esm data=homework.monthlyavgtrain print=all plot=all 
+		 seasonality=12 lead=24;
+	forecast Daily_Max_8_hour_ozone_concentra / model=multseasonal;
+run;
+
+* Winters multiplicative exponential smoothing model (includes trend); 
+* Lead = 12, uses outfor statement to output forecasts; 
+proc esm data=homework.monthlyavgtrain print=all plot=all 
+		 seasonality=12 lead=12 back=12 outfor=test;
+	forecast Daily_Max_8_hour_ozone_concentra / model=multwinters;
+run;
