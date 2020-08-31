@@ -15,8 +15,17 @@ data homework.ozonetest;
 	set homework.ozone;
 	where date between '01JAN2020'd and '31MAY2020'd;
 run;
+/*Here is the NEW datasets based on what we did in class 8/31*/
+data homework.ozonetrainvalid;
+	set homework.ozone;
+	where date between '01JAN2014'd and '31DEC2019'd;
+run;
+data homework.ozonetest;
+	set homework.ozone;
+	where date between '01JAN2020'd and '31MAY2020'd;
+run;
 
-proc means data=homework.ozonetrain; 
+proc means data=homework.ozonevalidtrain; 
 	var daily_max_8_hour_ozone_concentra;
 	class newdate;
 	output out=homework.monthlyavgtrain;
